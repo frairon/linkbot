@@ -1,0 +1,5 @@
+no-tests = true
+
+[sqlite3]
+    dbname = "/tmp/data.db"
+    blacklist = ["schema_migrations"]
