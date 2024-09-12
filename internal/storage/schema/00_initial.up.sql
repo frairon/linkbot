@@ -3,7 +3,7 @@
 -- stores users
 create table users(
   id INTEGER not null primary key,
-  Name text
+  Name text not null
 );
 
 create table user_session(

@@ -29,7 +29,7 @@ type State interface {
 	BeforeLeave(bs *botSession)
 }
 
-type StateBuilder func() State
+type StateFactory func() State
 
 func NewButtonKeyboard(rows ...ButtonRow) ButtonKeyboard {
 	return ButtonKeyboard(rows)
@@ -84,6 +84,24 @@ type functionState struct {
 	commandHandler       func(bs *botSession, command string, args ...string) bool
 	callbackQueryHandler func(bs *botSession, query *tgbotapi.CallbackQuery) bool
 	beforeLeaveHandler   func(bs *botSession)
+}
+
+type StateBuilder struct {
+	fs *functionState
+}
+
+func NewStateBuilder() *StateBuilder {
+	return &StateBuilder{
+		fs: &functionState{
+			activate: func(bs *botSession) {
+				bs.SendMessage("I am a state")
+			},
+		},
+	}
+}
+
+func (sb *StateBuilder) Done() State {
+	return sb.fs
 }
 
 func (fs *functionState) Activate(bc *botSession) {

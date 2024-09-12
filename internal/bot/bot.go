@@ -25,10 +25,10 @@ type Bot struct {
 
 	shutdown chan struct{}
 
-	rootState StateBuilder
+	rootState StateFactory
 }
 
-func New(botApi *tgbotapi.BotAPI, st *storage.Storage, rootState StateBuilder) (*Bot, error) {
+func New(botApi *tgbotapi.BotAPI, st *storage.Storage, rootState StateFactory) (*Bot, error) {
 	return &Bot{
 		botApi:    botApi,
 		st:        st,
@@ -310,11 +310,11 @@ func (b *Bot) broadcastToActive(message string) {
 
 type BroadcastOptions struct {
 	message  string
-	newState StateBuilder
+	newState StateFactory
 }
 type BroadcastOption func(opts *BroadcastOptions)
 
-func BroadcastNewState(stateBuilder StateBuilder) BroadcastOption {
+func BroadcastNewState(stateBuilder StateFactory) BroadcastOption {
 	return func(opts *BroadcastOptions) {
 		opts.newState = stateBuilder
 	}

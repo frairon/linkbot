@@ -6,4 +6,4 @@ upgrade-from-schema-sqlite3:
 	# populate the database
 	go run generate/main.go -file=/tmp/data.db
 	# create boilerplate code
-	sqlboiler sqlite3
+	sqlboiler sqlite3 --no-rows-affected  --no-context

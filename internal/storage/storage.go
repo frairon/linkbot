@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -30,7 +29,8 @@ func NewStorage(dbConn string) (*Storage, error) {
 		return nil, fmt.Errorf("error opening database: %v", err)
 	}
 
-	boil.DebugMode = true
+	// enable if something is odd with the storage layer to see sql queries
+	// boil.DebugMode = true
 
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("cannot ping database: %v", err)
@@ -54,12 +54,8 @@ func (s *Storage) Close() error {
 	return s.db.Close()
 }
 
-func (s *Storage) ctx() context.Context {
-	return context.Background()
-}
-
 func (s *Storage) UserExists(userId int64) bool {
-	exists, err := models.UserExists(s.ctx(), s.db, userId)
+	exists, err := models.UserExists(s.db, userId)
 	if err != nil {
 		log.Printf("error finding user: %v", err)
 	}
@@ -68,42 +64,41 @@ func (s *Storage) UserExists(userId int64) bool {
 }
 
 func (s *Storage) AddUser(userId int64, name string) error {
-	exists, err := models.UserExists(s.ctx(), s.db, userId)
+	exists, err := models.UserExists(s.db, userId)
 	if err != nil {
 		return fmt.Errorf("error checking if user exists: %v", err)
 	}
-	log.Printf("userId: %d", userId)
-	u := models.User{ID: userId, Name: null.StringFrom(name)}
+	u := models.User{ID: userId, Name: name}
 
 	if exists {
 		log.Printf("user exists.")
-		_, err = u.Update(s.ctx(), s.db, boil.Infer())
+		err = u.Update(s.db, boil.Infer())
 		return err
 	}
 	log.Printf("user does not exist, will create: %#v", u)
 	// insert user
-	return u.Insert(s.ctx(), s.db, boil.Infer())
+	return u.Insert(s.db, boil.Infer())
 }
 
 func (s *Storage) ListUsers() ([]*models.User, error) {
-	return models.Users().All(s.ctx(), s.db)
+	return models.Users().All(s.db)
 }
 
 func (s *Storage) GetUser(userId int64) (*models.User, error) {
-	return models.FindUser(s.ctx(), s.db, userId)
+	return models.FindUser(s.db, userId)
 }
 
 func (s *Storage) DeleteUser(user *models.User) error {
-	_, err := user.Delete(s.ctx(), s.db)
+	err := user.Delete(s.db)
 	return err
 }
 
 func (s *Storage) UserSessions() ([]*models.UserSession, error) {
-	return models.UserSessions().All(s.ctx(), s.db)
+	return models.UserSessions().All(s.db)
 }
 
 func (s *Storage) StoreSession(userId int64, chatId int64, lastUserAction time.Time, sessionData string) error {
-	sess, err := models.FindUserSession(s.ctx(), s.db, userId)
+	sess, err := models.FindUserSession(s.db, userId)
 	if err != nil && err != sql.ErrNoRows {
 		return fmt.Errorf("error finding existing session: %v", err)
 	}
@@ -115,13 +110,13 @@ func (s *Storage) StoreSession(userId int64, chatId int64, lastUserAction time.T
 			LastUserAction: null.TimeFrom(lastUserAction),
 			Data:           null.StringFrom(sessionData),
 		}
-		return sess.Insert(s.ctx(), s.db, boil.Infer())
+		return sess.Insert(s.db, boil.Infer())
 	}
 
 	sess.ChatID = chatId
 	sess.LastUserAction = null.TimeFrom(lastUserAction)
 	sess.Data = null.StringFrom(sessionData)
-	_, err = sess.Update(s.ctx(), s.db, boil.Infer())
+	err = sess.Update(s.db, boil.Infer())
 	return err
 }
 
@@ -137,7 +132,7 @@ func (s *Storage) SetResidentMacs(macs []string) error {
 
 func GetSettingByKey[T any](s *Storage, key string) (*T, error) {
 	var target T
-	setting, err := models.FindSetting(s.ctx(), s.db, null.StringFrom(key))
+	setting, err := models.FindSetting(s.db, null.StringFrom(key))
 	if err == sql.ErrNoRows {
 		return &target, nil
 	}
@@ -155,13 +150,13 @@ func SetSetting[T any](s *Storage, key string, value T) error {
 		Value: null.StringFrom(string(marshalled)),
 	}
 
-	exists, err := models.Settings(qm.Where("key=?", key)).Exists(s.ctx(), s.db)
+	exists, err := models.Settings(qm.Where("key=?", key)).Exists(s.db)
 	if err != nil {
 		return err
 	}
 	if !exists {
-		return setting.Insert(s.ctx(), s.db, boil.Infer())
+		return setting.Insert(s.db, boil.Infer())
 	}
-	_, err = setting.Update(s.ctx(), s.db, boil.Infer())
+	err = setting.Update(s.db, boil.Infer())
 	return err
 }
