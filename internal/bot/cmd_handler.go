@@ -5,18 +5,18 @@ import (
 )
 
 type CommandHandler interface {
-	Handle(bs *botSession, command string, args ...string) bool
+	Handle(bs *BotSession, command string, args ...string) bool
 }
 
-type FuncCommandHandler func(bs *botSession, command string, args ...string) bool
+type FuncCommandHandler func(bs *BotSession, command string, args ...string) bool
 
-func (f FuncCommandHandler) Handle(bs *botSession, command string, args ...string) bool {
+func (f FuncCommandHandler) Handle(bs *BotSession, command string, args ...string) bool {
 	return f(bs, command, args...)
 }
 
 type HandlerMap map[string]CommandHandler
 
-func (hm HandlerMap) Handle(bs *botSession, command string, args ...string) bool {
+func (hm HandlerMap) Handle(bs *BotSession, command string, args ...string) bool {
 	cmd, ok := hm[command]
 	if !ok {
 		return false

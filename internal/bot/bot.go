@@ -19,7 +19,7 @@ type Bot struct {
 	acceptNewUser bool
 
 	mSessions sync.Mutex
-	sessions  map[int64]*botSession
+	sessions  map[int64]*BotSession
 
 	startTime time.Time
 
@@ -32,13 +32,13 @@ func New(botApi *tgbotapi.BotAPI, st *storage.Storage, rootState StateFactory) (
 	return &Bot{
 		botApi:    botApi,
 		st:        st,
-		sessions:  make(map[int64]*botSession),
+		sessions:  make(map[int64]*BotSession),
 		shutdown:  make(chan struct{}),
 		rootState: rootState,
 	}, nil
 }
 
-func (b *Bot) getOrCreateSession(ctx context.Context, user *tgbotapi.User, chat *tgbotapi.Chat) (*botSession, error) {
+func (b *Bot) getOrCreateSession(ctx context.Context, user *tgbotapi.User, chat *tgbotapi.Chat) (*BotSession, error) {
 	if chat == nil {
 		return nil, fmt.Errorf("chat is nil, cannot create session")
 	}
@@ -198,7 +198,7 @@ func (b *Bot) Run(ctx context.Context) error {
 	}
 }
 
-func (b *Bot) foreachSessionAsync(do func(session *botSession)) {
+func (b *Bot) foreachSessionAsync(do func(session *BotSession)) {
 	for _, session := range b.sessions {
 		session := session
 		go func() {

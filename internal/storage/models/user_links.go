@@ -23,8 +23,9 @@ import (
 
 // UserLink is an object representing the database table.
 type UserLink struct {
-	LinkID   int64       `boil:"link_id" json:"link_id" toml:"link_id" yaml:"link_id"`
+	LinkID   string      `boil:"link_id" json:"link_id" toml:"link_id" yaml:"link_id"`
 	UserID   int64       `boil:"user_id" json:"user_id" toml:"user_id" yaml:"user_id"`
+	Category null.String `boil:"category" json:"category,omitempty" toml:"category" yaml:"category,omitempty"`
 	Link     null.String `boil:"link" json:"link,omitempty" toml:"link" yaml:"link,omitempty"`
 	Headline null.String `boil:"headline" json:"headline,omitempty" toml:"headline" yaml:"headline,omitempty"`
 	Added    null.Time   `boil:"added" json:"added,omitempty" toml:"added" yaml:"added,omitempty"`
@@ -36,12 +37,14 @@ type UserLink struct {
 var UserLinkColumns = struct {
 	LinkID   string
 	UserID   string
+	Category string
 	Link     string
 	Headline string
 	Added    string
 }{
 	LinkID:   "link_id",
 	UserID:   "user_id",
+	Category: "category",
 	Link:     "link",
 	Headline: "headline",
 	Added:    "added",
@@ -50,18 +53,45 @@ var UserLinkColumns = struct {
 var UserLinkTableColumns = struct {
 	LinkID   string
 	UserID   string
+	Category string
 	Link     string
 	Headline string
 	Added    string
 }{
 	LinkID:   "user_links.link_id",
 	UserID:   "user_links.user_id",
+	Category: "user_links.category",
 	Link:     "user_links.link",
 	Headline: "user_links.headline",
 	Added:    "user_links.added",
 }
 
 // Generated where
+
+type whereHelperstring struct{ field string }
+
+func (w whereHelperstring) EQ(x string) qm.QueryMod    { return qmhelper.Where(w.field, qmhelper.EQ, x) }
+func (w whereHelperstring) NEQ(x string) qm.QueryMod   { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
+func (w whereHelperstring) LT(x string) qm.QueryMod    { return qmhelper.Where(w.field, qmhelper.LT, x) }
+func (w whereHelperstring) LTE(x string) qm.QueryMod   { return qmhelper.Where(w.field, qmhelper.LTE, x) }
+func (w whereHelperstring) GT(x string) qm.QueryMod    { return qmhelper.Where(w.field, qmhelper.GT, x) }
+func (w whereHelperstring) GTE(x string) qm.QueryMod   { return qmhelper.Where(w.field, qmhelper.GTE, x) }
+func (w whereHelperstring) LIKE(x string) qm.QueryMod  { return qm.Where(w.field+" LIKE ?", x) }
+func (w whereHelperstring) NLIKE(x string) qm.QueryMod { return qm.Where(w.field+" NOT LIKE ?", x) }
+func (w whereHelperstring) IN(slice []string) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
+}
+func (w whereHelperstring) NIN(slice []string) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
+}
 
 type whereHelperint64 struct{ field string }
 
@@ -111,14 +141,16 @@ func (w whereHelpernull_Time) IsNull() qm.QueryMod    { return qmhelper.WhereIsN
 func (w whereHelpernull_Time) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
 
 var UserLinkWhere = struct {
-	LinkID   whereHelperint64
+	LinkID   whereHelperstring
 	UserID   whereHelperint64
+	Category whereHelpernull_String
 	Link     whereHelpernull_String
 	Headline whereHelpernull_String
 	Added    whereHelpernull_Time
 }{
-	LinkID:   whereHelperint64{field: "\"user_links\".\"link_id\""},
+	LinkID:   whereHelperstring{field: "\"user_links\".\"link_id\""},
 	UserID:   whereHelperint64{field: "\"user_links\".\"user_id\""},
+	Category: whereHelpernull_String{field: "\"user_links\".\"category\""},
 	Link:     whereHelpernull_String{field: "\"user_links\".\"link\""},
 	Headline: whereHelpernull_String{field: "\"user_links\".\"headline\""},
 	Added:    whereHelpernull_Time{field: "\"user_links\".\"added\""},
@@ -141,11 +173,11 @@ func (*userLinkR) NewStruct() *userLinkR {
 type userLinkL struct{}
 
 var (
-	userLinkAllColumns            = []string{"link_id", "user_id", "link", "headline", "added"}
-	userLinkColumnsWithoutDefault = []string{"user_id"}
-	userLinkColumnsWithDefault    = []string{"link_id", "link", "headline", "added"}
+	userLinkAllColumns            = []string{"link_id", "user_id", "category", "link", "headline", "added"}
+	userLinkColumnsWithoutDefault = []string{"link_id", "user_id"}
+	userLinkColumnsWithDefault    = []string{"category", "link", "headline", "added"}
 	userLinkPrimaryKeyColumns     = []string{"link_id"}
-	userLinkGeneratedColumns      = []string{"link_id"}
+	userLinkGeneratedColumns      = []string{}
 )
 
 type (
@@ -430,7 +462,7 @@ func UserLinks(mods ...qm.QueryMod) userLinkQuery {
 
 // FindUserLink retrieves a single record by ID with an executor.
 // If selectCols is empty Find will return all columns.
-func FindUserLink(exec boil.Executor, linkID int64, selectCols ...string) (*UserLink, error) {
+func FindUserLink(exec boil.Executor, linkID string, selectCols ...string) (*UserLink, error) {
 	userLinkObj := &UserLink{}
 
 	sel := "*"
@@ -485,7 +517,6 @@ func (o *UserLink) Insert(exec boil.Executor, columns boil.Columns) error {
 			userLinkColumnsWithoutDefault,
 			nzDefaults,
 		)
-		wl = strmangle.SetComplement(wl, userLinkGeneratedColumns)
 
 		cache.valueMapping, err = queries.BindMapping(userLinkType, userLinkMapping, wl)
 		if err != nil {
@@ -555,7 +586,6 @@ func (o *UserLink) Update(exec boil.Executor, columns boil.Columns) error {
 			userLinkAllColumns,
 			userLinkPrimaryKeyColumns,
 		)
-		wl = strmangle.SetComplement(wl, userLinkGeneratedColumns)
 
 		if !columns.IsWhitelist() {
 			wl = strmangle.SetComplement(wl, []string{"created_at"})
@@ -896,7 +926,7 @@ func (o *UserLinkSlice) ReloadAll(exec boil.Executor) error {
 }
 
 // UserLinkExists checks if the UserLink row exists.
-func UserLinkExists(exec boil.Executor, linkID int64) (bool, error) {
+func UserLinkExists(exec boil.Executor, linkID string) (bool, error) {
 	var exists bool
 	sql := "select exists(select 1 from \"user_links\" where \"link_id\"=? limit 1)"
 

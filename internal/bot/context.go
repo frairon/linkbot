@@ -11,7 +11,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-type GlobalMessageHandler func(bs *botSession, message *tgbotapi.Message) bool
+type GlobalMessageHandler func(bs *BotSession, message *tgbotapi.Message) bool
 
 type SessionSettings struct {
 	PauseAllNotifications bool
@@ -27,7 +27,7 @@ type SessionSettings struct {
 	SingleEnterLeaveAlert bool
 }
 
-type botSession struct {
+type BotSession struct {
 	st *storage.Storage
 
 	userId int64
@@ -52,8 +52,8 @@ type botSession struct {
 	settings *SessionSettings
 }
 
-func NewSession(st *storage.Storage, userId int64, chatId int64, bot *Bot, botCtx context.Context, botApi *tgbotapi.BotAPI) *botSession {
-	return &botSession{
+func NewSession(st *storage.Storage, userId int64, chatId int64, bot *Bot, botCtx context.Context, botApi *tgbotapi.BotAPI) *BotSession {
+	return &BotSession{
 		st:                     st,
 		userId:                 userId,
 		chatId:                 chatId,
@@ -68,11 +68,11 @@ func NewSession(st *storage.Storage, userId int64, chatId int64, bot *Bot, botCt
 	}
 }
 
-func (bs *botSession) Settings() *SessionSettings {
+func (bs *BotSession) Settings() *SessionSettings {
 	return bs.settings
 }
 
-func (bs *botSession) getOrPushCurrentState() State {
+func (bs *BotSession) getOrPushCurrentState() State {
 	if len(bs.states) == 0 {
 		bs.states = []State{bs.bot.RootState()}
 	}
@@ -80,7 +80,7 @@ func (bs *botSession) getOrPushCurrentState() State {
 	return bs.states[len(bs.states)-1]
 }
 
-func (bs *botSession) Handle(update tgbotapi.Update) bool {
+func (bs *BotSession) Handle(update tgbotapi.Update) bool {
 	curState := bs.getOrPushCurrentState()
 
 	bs.lastUserAction = time.Now()
@@ -119,7 +119,7 @@ func (bs *botSession) Handle(update tgbotapi.Update) bool {
 	return false
 }
 
-func (bs *botSession) removeExpiredCallback(query *tgbotapi.CallbackQuery) bool {
+func (bs *BotSession) removeExpiredCallback(query *tgbotapi.CallbackQuery) bool {
 	alert := tgbotapi.NewCallbackWithAlert(query.InlineMessageID, "message expired, buttons disabled")
 	alert.CallbackQueryID = query.ID
 
@@ -133,7 +133,7 @@ func (bs *botSession) removeExpiredCallback(query *tgbotapi.CallbackQuery) bool 
 	return true
 }
 
-func (bs *botSession) RemoveKeyboardForMessage(messageId int) {
+func (bs *BotSession) RemoveKeyboardForMessage(messageId int) {
 	// construct an update reply-markup message manually, because we need to set
 	// the ReplyMarkup to nil, which is not supported by the library
 	bs.botApi.Request(tgbotapi.EditMessageReplyMarkupConfig{
@@ -145,7 +145,7 @@ func (bs *botSession) RemoveKeyboardForMessage(messageId int) {
 	})
 }
 
-func (bs *botSession) handleCommand(command string, args []string) bool {
+func (bs *BotSession) handleCommand(command string, args []string) bool {
 	switch command {
 	case CommandCancel.Command:
 		bs.PopState()
@@ -161,11 +161,11 @@ func (bs *botSession) handleCommand(command string, args []string) bool {
 	return false
 }
 
-func (bs *botSession) SetCommandHandler(name string, handler CommandHandler) {
+func (bs *BotSession) SetCommandHandler(name string, handler CommandHandler) {
 	bs.sessionCommandHandlers[name] = handler
 }
 
-func (bs *botSession) PushState(state State) {
+func (bs *BotSession) PushState(state State) {
 	if len(bs.states) > 0 {
 		bs.CurrentState().BeforeLeave(bs)
 	}
@@ -173,7 +173,7 @@ func (bs *botSession) PushState(state State) {
 	state.Activate(bs)
 }
 
-func (bs *botSession) PopState() {
+func (bs *BotSession) PopState() {
 	if len(bs.states) == 0 {
 		return
 	}
@@ -187,7 +187,7 @@ func (bs *botSession) PopState() {
 	curState.Return(bs)
 }
 
-func (bs *botSession) DropStates(n int) {
+func (bs *BotSession) DropStates(n int) {
 	if len(bs.states) > n {
 		bs.states = bs.states[:len(bs.states)-n]
 	} else {
@@ -196,14 +196,14 @@ func (bs *botSession) DropStates(n int) {
 	bs.getOrPushCurrentState().Return(bs)
 }
 
-func (bs *botSession) CurrentState() State {
+func (bs *BotSession) CurrentState() State {
 	if len(bs.states) == 0 {
 		return nil
 	}
 	return bs.states[len(bs.states)-1]
 }
 
-func (bs *botSession) ReplaceState(state State) {
+func (bs *BotSession) ReplaceState(state State) {
 	if len(bs.states) == 0 {
 		return
 	}
@@ -212,24 +212,24 @@ func (bs *botSession) ReplaceState(state State) {
 	state.Activate(bs)
 }
 
-func (bs *botSession) ResetToState(state State) {
+func (bs *BotSession) ResetToState(state State) {
 	bs.states = nil
 	bs.PushState(state)
 }
 
-func (bs *botSession) Storage() *storage.Storage {
+func (bs *BotSession) Storage() *storage.Storage {
 	return bs.st
 }
 
-func (bs *botSession) UserId() int64 {
+func (bs *BotSession) UserId() int64 {
 	return bs.userId
 }
 
-func (bs *botSession) ChatId() int64 {
+func (bs *BotSession) ChatId() int64 {
 	return bs.chatId
 }
 
-func (bc *botSession) SendMessageWithCommands(text string, replyCommands ButtonKeyboard, opts ...SendMessageOption) int {
+func (bc *BotSession) SendMessageWithCommands(text string, replyCommands ButtonKeyboard, opts ...SendMessageOption) int {
 	msg := tgbotapi.NewMessage(bc.ChatId(), text)
 	msg.ParseMode = "html"
 
@@ -308,11 +308,11 @@ func SendMessageWithNotification() SendMessageOption {
 	}
 }
 
-func (bc *botSession) SendMessage(text string, opts ...SendMessageOption) int {
+func (bc *BotSession) SendMessage(text string, opts ...SendMessageOption) int {
 	return bc.SendMessageWithCommands(text, nil, opts...)
 }
 
-func (bc *botSession) UpdateMessageForCallback(queryId string, messageId int, text string, opts ...SendMessageOption) {
+func (bc *BotSession) UpdateMessageForCallback(queryId string, messageId int, text string, opts ...SendMessageOption) {
 	edit := tgbotapi.EditMessageTextConfig{
 		BaseEdit: tgbotapi.BaseEdit{
 			ChatID:    bc.chatId,
@@ -338,24 +338,24 @@ func (bc *botSession) UpdateMessageForCallback(queryId string, messageId int, te
 	bc.botApi.Request(tgbotapi.NewCallback(queryId, ""))
 }
 
-func (bc *botSession) SendError(err error) {
+func (bc *BotSession) SendError(err error) {
 	_, sendErr := bc.botApi.Send(tgbotapi.NewMessage(bc.ChatId(), fmt.Sprintf("error: %v", err)))
 	if sendErr != nil {
 		log.Printf("Error sending error: %v", sendErr)
 	}
 }
 
-func (bc *botSession) Fail(message string, formatErrorMsg string, args ...interface{}) {
+func (bc *BotSession) Fail(message string, formatErrorMsg string, args ...interface{}) {
 	log.Printf(formatErrorMsg, args...)
 	bc.SendMessage(message)
 	bc.PopState()
 }
 
-func (bc *botSession) AcceptUsers() {
+func (bc *BotSession) AcceptUsers() {
 	bc.bot.AcceptUsers(bc.botCtx)
 }
 
-func (bc *botSession) BotName() (string, error) {
+func (bc *BotSession) BotName() (string, error) {
 	me, err := bc.botApi.GetMe()
 	if err != nil {
 		return "", fmt.Errorf("error getting bot identity: %v", err)
@@ -363,7 +363,7 @@ func (bc *botSession) BotName() (string, error) {
 	return me.UserName, nil
 }
 
-func (bc *botSession) Shutdown() {
+func (bc *BotSession) Shutdown() {
 	for i := len(bc.states) - 1; i >= 0; i-- {
 		bc.states[i].BeforeLeave(bc)
 	}

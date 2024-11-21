@@ -43,11 +43,11 @@ func PromptState(yesHandler func(), options ...PromptOption) State {
 	}
 
 	return &functionState{
-		activate: func(bs *botSession) {
+		activate: func(bs *BotSession) {
 			bs.SendMessageWithCommands(opts.message, NewButtonKeyboard(newRow(Yes, Cancel)))
 		},
 
-		handleMessage: func(bs *botSession, message *tgbotapi.Message) {
+		handleMessage: func(bs *BotSession, message *tgbotapi.Message) {
 			switch Button(message.Text) {
 			case Cancel:
 				bs.SendMessage("Aborted.")
@@ -60,13 +60,13 @@ func PromptState(yesHandler func(), options ...PromptOption) State {
 	}
 }
 
-func SelectState[T any](text string, items []T, accept func(bs *botSession, item T)) State {
+func SelectState[T any](text string, items []T, accept func(bs *BotSession, item T)) State {
 	return &functionState{
-		activate: func(bs *botSession) {
+		activate: func(bs *BotSession) {
 			bs.SendMessage(text)
 			bs.SendMessage(fmt.Sprintf("Please enter index (0-%d)", len(items)-1))
 		},
-		handleMessage: func(bs *botSession, msg *tgbotapi.Message) {
+		handleMessage: func(bs *BotSession, msg *tgbotapi.Message) {
 			selector := strings.TrimSpace(msg.Text)
 
 			idx, err := strconv.ParseInt(selector, 10, 32)

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/frairon/botty"
 	"github.com/frairon/linkbot/internal/storage/models"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -20,7 +21,7 @@ func UsersList() State {
 	var users []*models.User
 
 	return &functionState{
-		activate: func(bs *botSession) {
+		activate: func(bs *BotSession) {
 			var err error
 			users, err = bs.Storage().ListUsers()
 			if err != nil {
@@ -28,7 +29,7 @@ func UsersList() State {
 				return
 			}
 
-			content, err := RunTemplate(`All Users
+			content, err := botty.RunTemplate(`All Users
 {{divider}}
 {{- if .users -}}
 {{- range $idx, $user:= .users }}
@@ -36,7 +37,7 @@ func UsersList() State {
 {{- end -}}
 {{- else }}
 - no users registered -
-{{- end -}}`, kv("users", users))
+{{- end -}}`, botty.KV("users", users))
 
 			if err != nil {
 				bs.Fail("Cannot list users", "error reading users: %v", err)
@@ -46,7 +47,7 @@ func UsersList() State {
 					newRow(Add, Delete)))
 			}
 		},
-		handleMessage: func(bs *botSession, message *tgbotapi.Message) {
+		handleMessage: func(bs *BotSession, message *tgbotapi.Message) {
 			botName, err := bs.BotName()
 			if err != nil {
 				bs.Fail("Cannot find bot identity", "error getting bot name: %v", err)
@@ -57,9 +58,9 @@ func UsersList() State {
 			case Back:
 				bs.PopState()
 			case Add:
-				text, err := RunTemplate(`The bot is now set to ACCEPT-mode, allowing new users to join.
+				text, err := botty.RunTemplate(`The bot is now set to ACCEPT-mode, allowing new users to join.
 This will be disabled automatically after 10 minutes.
-Tell you friend to contact bot @{{.botName}} now.`, kv("botName", botName))
+Tell you friend to contact bot @{{.botName}} now.`, botty.KV("botName", botName))
 				if err != nil {
 					bs.Fail("error rendering template", "error rendering template: %v", err)
 					return
@@ -76,10 +77,10 @@ Tell you friend to contact bot @{{.botName}} now.`, kv("botName", botName))
 func SelectToDeleteUser(users []*models.User) State {
 	var Back Button = "Back"
 	return &functionState{
-		activate: func(bs *botSession) {
+		activate: func(bs *BotSession) {
 			bs.SendMessageWithCommands("Select user to delete", NewButtonKeyboard(newRow(Back)))
 		},
-		handleMessage: func(bs *botSession, msg *tgbotapi.Message) {
+		handleMessage: func(bs *BotSession, msg *tgbotapi.Message) {
 			selector := strings.TrimSpace(msg.Text)
 
 			idx, err := strconv.ParseInt(selector, 10, 32)

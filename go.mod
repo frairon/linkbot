@@ -1,6 +1,8 @@
 module github.com/frairon/linkbot
 
-go 1.22.3
+go 1.23
+
+toolchain go1.23.0
 
 require (
 	github.com/astappiev/microdata v1.0.2
@@ -17,12 +19,14 @@ require (
 	github.com/volatiletech/strmangle v0.0.6
 	golang.org/x/sync v0.8.0
 )
+replace github.com/frairon/botty => ../botty
 
 require (
 	github.com/astappiev/fixjson v1.0.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/frairon/botty v0.0.0-20241104220301-f25dbfcd0ca5 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect

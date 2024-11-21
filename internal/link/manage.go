@@ -1,7 +1,13 @@
 package link
 
-import "github.com/frairon/linkbot/internal/bot"
+import (
+	"github.com/frairon/botty"
+)
 
-func Home() bot.State {
-	return bot.NewStateBuilder().Done()
+func Home() LinkState {
+	return botty.NewStateBuilder[*State]().OnActivate(func(bs LinkSession) {
+		bs.SendTemplateMessage("asd", botty.TplValues(botty.KV("key", "value")), botty.SendMessageWithKeyboard(botty.NewButtonKeyboard(botty.ButtonRow{
+			"back",
+		})))
+	}).Build()
 }

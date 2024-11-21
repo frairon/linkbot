@@ -3,6 +3,7 @@ package bot
 import (
 	"log"
 
+	"github.com/frairon/botty"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -24,8 +25,8 @@ func ConfigureSessionSettings() State {
 		Unmute          Button = "Unmute"
 	)
 	return &functionState{
-		activate: func(bs *botSession) {
-			content, err := RunTemplate(`<b>User Settings</b>
+		activate: func(bs *BotSession) {
+			content, err := botty.RunTemplate(`<b>User Settings</b>
 ========
 {{if .settings.PauseAllNotifications -}}
 All Notifications Paused
@@ -38,7 +39,7 @@ Notify on:
   • External Action  {{if .settings.NotifyOnTempChange}}🔔{{else}}🔕{{end}}
   • Enter/Leave of device  {{if .settings.NotifyOnEnterLeave}}🔔{{else}}🔕{{end}}
 {{end}}`,
-				kv("settings", bs.settings))
+				botty.KV("settings", bs.settings))
 			if err != nil {
 				bs.SendError(err)
 			}
@@ -61,7 +62,7 @@ Notify on:
 					),
 				))
 		},
-		handleMessage: func(bs *botSession, message *tgbotapi.Message) {
+		handleMessage: func(bs *BotSession, message *tgbotapi.Message) {
 			switch Button(message.Text) {
 			case Back:
 				bs.PopState()
@@ -102,8 +103,8 @@ Notify on:
 
 func ConfigureMultiSettings() State {
 	renderSettings := func(name string, value bool) (string, error) {
-		return RunTemplate(`{{.name}} {{if .value}}🗹{{else}}☐{{end}}`,
-			kv("name", name), kv("value", value))
+		return botty.RunTemplate(`{{.name}} {{if .value}}🗹{{else}}☐{{end}}`,
+			botty.KV("name", name), botty.KV("value", value))
 	}
 
 	var (
@@ -116,7 +117,7 @@ func ConfigureMultiSettings() State {
 	}
 
 	return NewMultiMessageHandler(
-		func(bs *botSession, query string) (string, InlineKeyboard, error) {
+		func(bs *BotSession, query string) (string, InlineKeyboard, error) {
 			switch query {
 			case Disable.Data:
 				bs.settings.PauseAllNotifications = false
@@ -129,7 +130,7 @@ func ConfigureMultiSettings() State {
 			content, err := renderSettings("Pause all Notifications", bs.settings.PauseAllNotifications)
 			return content, makeKeyboard(bs.settings.PauseAllNotifications), err
 		},
-		func(bs *botSession, query string) (string, InlineKeyboard, error) {
+		func(bs *BotSession, query string) (string, InlineKeyboard, error) {
 			switch query {
 			case Disable.Data:
 				bs.settings.NotifyOnAutoTempChange = false
@@ -142,7 +143,7 @@ func ConfigureMultiSettings() State {
 			content, err := renderSettings("Notify on Temp Change", bs.settings.NotifyOnAutoTempChange)
 			return content, makeKeyboard(bs.settings.NotifyOnAutoTempChange), err
 		},
-		func(bs *botSession, query string) (string, InlineKeyboard, error) {
+		func(bs *BotSession, query string) (string, InlineKeyboard, error) {
 			switch query {
 			case Disable.Data:
 				bs.settings.NotifyOnBell = false
@@ -167,11 +168,11 @@ func TernaryButton(cond bool, trueButton, falseButton InlineButton) InlineButton
 
 func Settings() State {
 	renderSettings := func(settings *SessionSettings) (string, error) {
-		return RunTemplate(`<b>User Settings</b>
+		return botty.RunTemplate(`<b>User Settings</b>
 		========
 		PauseAllNotifications  {{if .settings.PauseAllNotifications}}🗹{{else}}☐{{end}}
 		`,
-			kv("settings", settings))
+			botty.KV("settings", settings))
 	}
 
 	var (
@@ -188,7 +189,7 @@ func Settings() State {
 		)
 	}
 
-	return NewMessageHandler(func(bs *botSession, query string) (string, InlineKeyboard, error) {
+	return NewMessageHandler(func(bs *BotSession, query string) (string, InlineKeyboard, error) {
 		switch query {
 		case PauseAllNotificationsOff.Data:
 			log.Printf("pausing notifications")
@@ -207,13 +208,13 @@ func Settings() State {
 	})
 }
 
-type InlineMessageHandler func(bs *botSession, query string) (string, InlineKeyboard, error)
+type InlineMessageHandler func(bs *BotSession, query string) (string, InlineKeyboard, error)
 
 func NewMessageHandler(handleQuery InlineMessageHandler) State {
 	var lastMessageId int
 
 	fs := &functionState{
-		activate: func(bs *botSession) {
+		activate: func(bs *BotSession) {
 			msg, keyboard, err := handleQuery(bs, "")
 			if err != nil {
 				bs.SendError(err)
@@ -221,7 +222,7 @@ func NewMessageHandler(handleQuery InlineMessageHandler) State {
 			}
 			lastMessageId = bs.SendMessage(msg, SendMessageInlineKeyboard(keyboard))
 		},
-		callbackQueryHandler: func(bs *botSession, query *tgbotapi.CallbackQuery) bool {
+		callbackQueryHandler: func(bs *BotSession, query *tgbotapi.CallbackQuery) bool {
 			log.Printf("callback: %#v", query)
 			content, keyboard, err := handleQuery(bs, query.Data)
 			if err != nil {
@@ -237,7 +238,7 @@ func NewMessageHandler(handleQuery InlineMessageHandler) State {
 			}
 			return true
 		},
-		beforeLeaveHandler: func(bs *botSession) {
+		beforeLeaveHandler: func(bs *BotSession) {
 			if lastMessageId != 0 {
 				bs.RemoveKeyboardForMessage(lastMessageId)
 			}
@@ -250,7 +251,7 @@ func NewMultiMessageHandler(handlers ...InlineMessageHandler) State {
 	handlersByMsg := map[int]InlineMessageHandler{}
 
 	fs := &functionState{
-		activate: func(bs *botSession) {
+		activate: func(bs *BotSession) {
 			for _, handler := range handlers {
 				msg, keyboard, err := handler(bs, "")
 				if err != nil {
@@ -261,7 +262,7 @@ func NewMultiMessageHandler(handlers ...InlineMessageHandler) State {
 				handlersByMsg[msgId] = handler
 			}
 		},
-		callbackQueryHandler: func(bs *botSession, query *tgbotapi.CallbackQuery) bool {
+		callbackQueryHandler: func(bs *BotSession, query *tgbotapi.CallbackQuery) bool {
 			handler := handlersByMsg[query.Message.MessageID]
 
 			if handler == nil {
@@ -282,7 +283,7 @@ func NewMultiMessageHandler(handlers ...InlineMessageHandler) State {
 			}
 			return true
 		},
-		beforeLeaveHandler: func(bs *botSession) {
+		beforeLeaveHandler: func(bs *BotSession) {
 			for msgId := range handlersByMsg {
 				bs.RemoveKeyboardForMessage(msgId)
 			}

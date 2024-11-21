@@ -19,14 +19,14 @@ func (c Button) S() string {
 }
 
 type State interface {
-	Activate(bs *botSession)
-	Return(bs *botSession)
-	HandleMessage(bs *botSession, message *tgbotapi.Message) bool
-	HandleCommand(bs *botSession, command string, args ...string) bool
-	HandleCallbackQuery(bs *botSession, query *tgbotapi.CallbackQuery) bool
+	Activate(bs *BotSession)
+	Return(bs *BotSession)
+	HandleMessage(bs *BotSession, message *tgbotapi.Message) bool
+	HandleCommand(bs *BotSession, command string, args ...string) bool
+	HandleCallbackQuery(bs *BotSession, query *tgbotapi.CallbackQuery) bool
 
 	// called before leaving the state (either by pushing another state on top of it or popping it)
-	BeforeLeave(bs *botSession)
+	BeforeLeave(bs *BotSession)
 }
 
 type StateFactory func() State
@@ -78,12 +78,12 @@ func NewInlineButton(label, data string) InlineButton {
 }
 
 type functionState struct {
-	activate             func(bs *botSession)
-	returner             func(bs *botSession)
-	handleMessage        func(bs *botSession, message *tgbotapi.Message)
-	commandHandler       func(bs *botSession, command string, args ...string) bool
-	callbackQueryHandler func(bs *botSession, query *tgbotapi.CallbackQuery) bool
-	beforeLeaveHandler   func(bs *botSession)
+	activate             func(bs *BotSession)
+	returner             func(bs *BotSession)
+	handleMessage        func(bs *BotSession, message *tgbotapi.Message)
+	commandHandler       func(bs *BotSession, command string, args ...string) bool
+	callbackQueryHandler func(bs *BotSession, query *tgbotapi.CallbackQuery) bool
+	beforeLeaveHandler   func(bs *BotSession)
 }
 
 type StateBuilder struct {
@@ -93,22 +93,26 @@ type StateBuilder struct {
 func NewStateBuilder() *StateBuilder {
 	return &StateBuilder{
 		fs: &functionState{
-			activate: func(bs *botSession) {
+			activate: func(bs *BotSession) {
 				bs.SendMessage("I am a state")
 			},
 		},
 	}
 }
 
-func (sb *StateBuilder) Done() State {
+func (sb *StateBuilder) OnActivate(activator func(bs *BotSession)) *StateBuilder {
+	sb.fs.activate = activator
+	return sb
+}
+func (sb *StateBuilder) Build() State {
 	return sb.fs
 }
 
-func (fs *functionState) Activate(bc *botSession) {
+func (fs *functionState) Activate(bc *BotSession) {
 	fs.activate(bc)
 }
 
-func (fs *functionState) Return(bs *botSession) {
+func (fs *functionState) Return(bs *BotSession) {
 	if fs.returner != nil {
 		fs.returner(bs)
 	} else {
@@ -116,7 +120,7 @@ func (fs *functionState) Return(bs *botSession) {
 	}
 }
 
-func (fs *functionState) HandleMessage(bs *botSession, message *tgbotapi.Message) bool {
+func (fs *functionState) HandleMessage(bs *BotSession, message *tgbotapi.Message) bool {
 	if fs.handleMessage == nil {
 		return false
 	}
@@ -124,21 +128,21 @@ func (fs *functionState) HandleMessage(bs *botSession, message *tgbotapi.Message
 	return true
 }
 
-func (fs *functionState) HandleCommand(bs *botSession, command string, args ...string) bool {
+func (fs *functionState) HandleCommand(bs *BotSession, command string, args ...string) bool {
 	if fs.commandHandler != nil {
 		return fs.commandHandler(bs, command, args...)
 	}
 	return false
 }
 
-func (fs *functionState) HandleCallbackQuery(bs *botSession, query *tgbotapi.CallbackQuery) bool {
+func (fs *functionState) HandleCallbackQuery(bs *BotSession, query *tgbotapi.CallbackQuery) bool {
 	if fs.callbackQueryHandler != nil {
 		return fs.callbackQueryHandler(bs, query)
 	}
 	return false
 }
 
-func (fs *functionState) BeforeLeave(bs *botSession) {
+func (fs *functionState) BeforeLeave(bs *BotSession) {
 	if fs.beforeLeaveHandler != nil {
 		fs.beforeLeaveHandler(bs)
 	}
@@ -148,7 +152,7 @@ const (
 	HomeButton Button = "🏠"
 )
 
-func GlobalHomeHandler(bs *botSession, message *tgbotapi.Message) bool {
+func GlobalHomeHandler(bs *BotSession, message *tgbotapi.Message) bool {
 	if message.Text == HomeButton.S() {
 		bs.ResetToState(bs.bot.RootState())
 		return true

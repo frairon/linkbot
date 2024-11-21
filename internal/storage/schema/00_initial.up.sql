@@ -15,13 +15,13 @@ create table user_session(
 
 
 create table user_links(
-  link_id INTEGER not null primary key,
+  link_id text not null primary key,
   user_id INTEGER not null,
+  category text,
   link text,
   headline text,
   added DATETIME
 );
-
 
 
 create table settings(
