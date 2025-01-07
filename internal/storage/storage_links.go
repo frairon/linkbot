@@ -6,7 +6,6 @@ import (
 
 	"github.com/frairon/linkbot/internal/storage/models"
 	"github.com/gofrs/uuid"
-	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
@@ -15,8 +14,8 @@ type CategoryCounts struct {
 	Count    int
 }
 
-func (s *Storage) ListCategories(userID int) ([]CategoryCounts, error) {
-	rows, err := s.db.Query("select category, count(*) from `user_links` where user_id=$1 group by 1 order by added DESC", userID)
+func (s *Storage) ListCategories(userID int64) ([]CategoryCounts, error) {
+	rows, err := s.db.Query("select category, count(*) from `user_links` where user_id=$1 and hidden != true group by 1 order by added DESC", userID)
 	if err != nil {
 		return nil, fmt.Errorf("error reading categories: %w", err)
 	}
@@ -39,10 +38,10 @@ func (s *Storage) AddLink(userId int64, category string, link string, headline s
 	ul := &models.UserLink{
 		LinkID:   linkId.String(),
 		UserID:   userId,
-		Category: null.StringFrom(category),
-		Link:     null.StringFrom(link),
-		Headline: null.StringFrom(headline),
-		Added:    null.TimeFrom(time.Now()),
+		Category: category,
+		Link:     link,
+		Headline: headline,
+		Added:    time.Now(),
 	}
 
 	return ul.Insert(s.db, boil.Infer())

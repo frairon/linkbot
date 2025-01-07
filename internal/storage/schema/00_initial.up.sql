@@ -17,10 +17,11 @@ create table user_session(
 create table user_links(
   link_id text not null primary key,
   user_id INTEGER not null,
-  category text,
-  link text,
-  headline text,
-  added DATETIME
+  category text not null default "default",
+  hidden boolean not null default 0,
+  link text not null,
+  headline text not null,
+  added DATETIME not null
 );
 
 

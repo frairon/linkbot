@@ -135,8 +135,6 @@ github.com/ericlagergren/decimal v0.0.0-20190420051523-6335edbaa640/go.mod h1:md
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
 github.com/fatih/color v1.9.0/go.mod h1:eQcE1qtQxscV5RaZvpXrrb8Drkc3/DdQ+uUYCNjL+zU=
 github.com/fatih/color v1.13.0/go.mod h1:kLAiJbzzSOZDVNGyDpeOxJ47H46qBXwg5ILebYFFOfk=
-github.com/frairon/botty v0.0.0-20241104220301-f25dbfcd0ca5 h1:kcGce3l6bct514nCTx7+zIbR4+wyfO915CyJBWdGvCk=
-github.com/frairon/botty v0.0.0-20241104220301-f25dbfcd0ca5/go.mod h1:RsDFTQlC1NvNuAp2husxor7JlReLCkR8aGlCdu/OY94=
 github.com/frankban/quicktest v1.14.3/go.mod h1:mgiwOwqx65TmIk1wJ6Q7wvnVMocbUorkibMOrVTHZps=
 github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHkI4W8=
 github.com/frankban/quicktest v1.14.6/go.mod h1:4ptaffx2x8+WTWXmUCuVU6aPUX1/Mz7zb5vbUoiM6w0=

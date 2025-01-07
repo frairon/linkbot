@@ -6,9 +6,10 @@ toolchain go1.23.0
 
 require (
 	github.com/astappiev/microdata v1.0.2
-	github.com/dustin/go-humanize v1.0.1
+	github.com/frairon/botty v0.0.0-20241104220301-f25dbfcd0ca5
 	github.com/friendsofgo/errors v0.9.2
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
+	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/golang-migrate/migrate/v4 v4.18.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/mattn/go-sqlite3 v1.14.23
@@ -19,6 +20,7 @@ require (
 	github.com/volatiletech/strmangle v0.0.6
 	golang.org/x/sync v0.8.0
 )
+
 replace github.com/frairon/botty => ../botty
 
 require (
@@ -26,8 +28,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/frairon/botty v0.0.0-20241104220301-f25dbfcd0ca5 // indirect
-	github.com/gofrs/uuid v4.4.0+incompatible // indirect
+	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect

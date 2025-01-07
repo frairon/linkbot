@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/friendsofgo/errors"
-	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
@@ -23,12 +22,13 @@ import (
 
 // UserLink is an object representing the database table.
 type UserLink struct {
-	LinkID   string      `boil:"link_id" json:"link_id" toml:"link_id" yaml:"link_id"`
-	UserID   int64       `boil:"user_id" json:"user_id" toml:"user_id" yaml:"user_id"`
-	Category null.String `boil:"category" json:"category,omitempty" toml:"category" yaml:"category,omitempty"`
-	Link     null.String `boil:"link" json:"link,omitempty" toml:"link" yaml:"link,omitempty"`
-	Headline null.String `boil:"headline" json:"headline,omitempty" toml:"headline" yaml:"headline,omitempty"`
-	Added    null.Time   `boil:"added" json:"added,omitempty" toml:"added" yaml:"added,omitempty"`
+	LinkID   string    `boil:"link_id" json:"link_id" toml:"link_id" yaml:"link_id"`
+	UserID   int64     `boil:"user_id" json:"user_id" toml:"user_id" yaml:"user_id"`
+	Category string    `boil:"category" json:"category" toml:"category" yaml:"category"`
+	Hidden   bool      `boil:"hidden" json:"hidden" toml:"hidden" yaml:"hidden"`
+	Link     string    `boil:"link" json:"link" toml:"link" yaml:"link"`
+	Headline string    `boil:"headline" json:"headline" toml:"headline" yaml:"headline"`
+	Added    time.Time `boil:"added" json:"added" toml:"added" yaml:"added"`
 
 	R *userLinkR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L userLinkL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -38,6 +38,7 @@ var UserLinkColumns = struct {
 	LinkID   string
 	UserID   string
 	Category string
+	Hidden   string
 	Link     string
 	Headline string
 	Added    string
@@ -45,6 +46,7 @@ var UserLinkColumns = struct {
 	LinkID:   "link_id",
 	UserID:   "user_id",
 	Category: "category",
+	Hidden:   "hidden",
 	Link:     "link",
 	Headline: "headline",
 	Added:    "added",
@@ -54,6 +56,7 @@ var UserLinkTableColumns = struct {
 	LinkID   string
 	UserID   string
 	Category string
+	Hidden   string
 	Link     string
 	Headline string
 	Added    string
@@ -61,6 +64,7 @@ var UserLinkTableColumns = struct {
 	LinkID:   "user_links.link_id",
 	UserID:   "user_links.user_id",
 	Category: "user_links.category",
+	Hidden:   "user_links.hidden",
 	Link:     "user_links.link",
 	Headline: "user_links.headline",
 	Added:    "user_links.added",
@@ -116,44 +120,52 @@ func (w whereHelperint64) NIN(slice []int64) qm.QueryMod {
 	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
 }
 
-type whereHelpernull_Time struct{ field string }
+type whereHelperbool struct{ field string }
 
-func (w whereHelpernull_Time) EQ(x null.Time) qm.QueryMod {
-	return qmhelper.WhereNullEQ(w.field, false, x)
+func (w whereHelperbool) EQ(x bool) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.EQ, x) }
+func (w whereHelperbool) NEQ(x bool) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
+func (w whereHelperbool) LT(x bool) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.LT, x) }
+func (w whereHelperbool) LTE(x bool) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.LTE, x) }
+func (w whereHelperbool) GT(x bool) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.GT, x) }
+func (w whereHelperbool) GTE(x bool) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
+
+type whereHelpertime_Time struct{ field string }
+
+func (w whereHelpertime_Time) EQ(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.EQ, x)
 }
-func (w whereHelpernull_Time) NEQ(x null.Time) qm.QueryMod {
-	return qmhelper.WhereNullEQ(w.field, true, x)
+func (w whereHelpertime_Time) NEQ(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.NEQ, x)
 }
-func (w whereHelpernull_Time) LT(x null.Time) qm.QueryMod {
+func (w whereHelpertime_Time) LT(x time.Time) qm.QueryMod {
 	return qmhelper.Where(w.field, qmhelper.LT, x)
 }
-func (w whereHelpernull_Time) LTE(x null.Time) qm.QueryMod {
+func (w whereHelpertime_Time) LTE(x time.Time) qm.QueryMod {
 	return qmhelper.Where(w.field, qmhelper.LTE, x)
 }
-func (w whereHelpernull_Time) GT(x null.Time) qm.QueryMod {
+func (w whereHelpertime_Time) GT(x time.Time) qm.QueryMod {
 	return qmhelper.Where(w.field, qmhelper.GT, x)
 }
-func (w whereHelpernull_Time) GTE(x null.Time) qm.QueryMod {
+func (w whereHelpertime_Time) GTE(x time.Time) qm.QueryMod {
 	return qmhelper.Where(w.field, qmhelper.GTE, x)
 }
-
-func (w whereHelpernull_Time) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
-func (w whereHelpernull_Time) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
 
 var UserLinkWhere = struct {
 	LinkID   whereHelperstring
 	UserID   whereHelperint64
-	Category whereHelpernull_String
-	Link     whereHelpernull_String
-	Headline whereHelpernull_String
-	Added    whereHelpernull_Time
+	Category whereHelperstring
+	Hidden   whereHelperbool
+	Link     whereHelperstring
+	Headline whereHelperstring
+	Added    whereHelpertime_Time
 }{
 	LinkID:   whereHelperstring{field: "\"user_links\".\"link_id\""},
 	UserID:   whereHelperint64{field: "\"user_links\".\"user_id\""},
-	Category: whereHelpernull_String{field: "\"user_links\".\"category\""},
-	Link:     whereHelpernull_String{field: "\"user_links\".\"link\""},
-	Headline: whereHelpernull_String{field: "\"user_links\".\"headline\""},
-	Added:    whereHelpernull_Time{field: "\"user_links\".\"added\""},
+	Category: whereHelperstring{field: "\"user_links\".\"category\""},
+	Hidden:   whereHelperbool{field: "\"user_links\".\"hidden\""},
+	Link:     whereHelperstring{field: "\"user_links\".\"link\""},
+	Headline: whereHelperstring{field: "\"user_links\".\"headline\""},
+	Added:    whereHelpertime_Time{field: "\"user_links\".\"added\""},
 }
 
 // UserLinkRels is where relationship names are stored.
@@ -173,9 +185,9 @@ func (*userLinkR) NewStruct() *userLinkR {
 type userLinkL struct{}
 
 var (
-	userLinkAllColumns            = []string{"link_id", "user_id", "category", "link", "headline", "added"}
-	userLinkColumnsWithoutDefault = []string{"link_id", "user_id"}
-	userLinkColumnsWithDefault    = []string{"category", "link", "headline", "added"}
+	userLinkAllColumns            = []string{"link_id", "user_id", "category", "hidden", "link", "headline", "added"}
+	userLinkColumnsWithoutDefault = []string{"link_id", "user_id", "link", "headline", "added"}
+	userLinkColumnsWithDefault    = []string{"category", "hidden"}
 	userLinkPrimaryKeyColumns     = []string{"link_id"}
 	userLinkGeneratedColumns      = []string{}
 )

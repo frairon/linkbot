@@ -9,7 +9,7 @@ type sessionContextManager struct {
 	st *storage.Storage
 }
 
-func NewManagers(st *storage.Storage) (botty.SessionContextManager[*State], botty.UserManager) {
+func NewManagers(st *storage.Storage) (botty.AppStateManager[*State], botty.UserManager) {
 	return &sessionContextManager{
 			st: st,
 		}, &userManager{
@@ -17,14 +17,16 @@ func NewManagers(st *storage.Storage) (botty.SessionContextManager[*State], bott
 		}
 }
 
-func (scm *sessionContextManager) CreateSessionContext(userId, chatId int64) *State {
-	return &State{}
+func (scm *sessionContextManager) CreateAppState(userId botty.UserId, chatId botty.ChatId) *State {
+	return &State{
+		st: scm.st,
+	}
 }
-func (scm *sessionContextManager) StoreSession(session botty.StoredSession[*State]) error {
+func (scm *sessionContextManager) StoreSessionState(session botty.StoredSessionState[*State]) error {
 	// TODO store them
 	return nil
 }
-func (scm *sessionContextManager) LoadSessions() ([]botty.StoredSession[*State], error) {
+func (scm *sessionContextManager) LoadSessionStates() ([]botty.StoredSessionState[*State], error) {
 	// TODO load them
 	return nil, nil
 }
