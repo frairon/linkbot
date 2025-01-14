@@ -23,7 +23,7 @@ import (
 // User is an object representing the database table.
 type User struct {
 	ID   int64  `boil:"id" json:"id" toml:"id" yaml:"id"`
-	Name string `boil:"Name" json:"Name" toml:"Name" yaml:"Name"`
+	Name string `boil:"name" json:"name" toml:"name" yaml:"name"`
 
 	R *userR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L userL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -34,7 +34,7 @@ var UserColumns = struct {
 	Name string
 }{
 	ID:   "id",
-	Name: "Name",
+	Name: "name",
 }
 
 var UserTableColumns = struct {
@@ -42,7 +42,7 @@ var UserTableColumns = struct {
 	Name string
 }{
 	ID:   "users.id",
-	Name: "users.Name",
+	Name: "users.name",
 }
 
 // Generated where
@@ -52,7 +52,7 @@ var UserWhere = struct {
 	Name whereHelperstring
 }{
 	ID:   whereHelperint64{field: "\"users\".\"id\""},
-	Name: whereHelperstring{field: "\"users\".\"Name\""},
+	Name: whereHelperstring{field: "\"users\".\"name\""},
 }
 
 // UserRels is where relationship names are stored.
@@ -72,11 +72,11 @@ func (*userR) NewStruct() *userR {
 type userL struct{}
 
 var (
-	userAllColumns            = []string{"id", "Name"}
-	userColumnsWithoutDefault = []string{"Name"}
-	userColumnsWithDefault    = []string{"id"}
+	userAllColumns            = []string{"id", "name"}
+	userColumnsWithoutDefault = []string{"id", "name"}
+	userColumnsWithDefault    = []string{}
 	userPrimaryKeyColumns     = []string{"id"}
-	userGeneratedColumns      = []string{"id"}
+	userGeneratedColumns      = []string{}
 )
 
 type (
@@ -416,7 +416,6 @@ func (o *User) Insert(exec boil.Executor, columns boil.Columns) error {
 			userColumnsWithoutDefault,
 			nzDefaults,
 		)
-		wl = strmangle.SetComplement(wl, userGeneratedColumns)
 
 		cache.valueMapping, err = queries.BindMapping(userType, userMapping, wl)
 		if err != nil {
@@ -486,7 +485,6 @@ func (o *User) Update(exec boil.Executor, columns boil.Columns) error {
 			userAllColumns,
 			userPrimaryKeyColumns,
 		)
-		wl = strmangle.SetComplement(wl, userGeneratedColumns)
 
 		if !columns.IsWhitelist() {
 			wl = strmangle.SetComplement(wl, []string{"created_at"})

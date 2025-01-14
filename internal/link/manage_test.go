@@ -27,9 +27,41 @@ func TestHome(t *testing.T) {
 	session.ReplaceState(state)
 
 	log.Printf("%s", bot.LastMessage.Text)
+	log.Printf("buttons: %v", bot.LastMessageButtons())
+
 	require.Contains(t, bot.LastMessage.Text, "Categories:")
 
+	bot.Send(userId, "back")
+
 	bot.Stop()
+}
+
+func TestAddLink(t *testing.T) {
+	bot, st := setupMockBot(t)
+	require.NoError(t, bot.Err())
+	defer bot.Stop()
+
+	session, err := bot.CreateSession(userId)
+	require.NoError(t, err)
+
+	// this will actiate home state
+	session.ReplaceState(Home())
+	bot.Send(userId, "add")
+
+	require.Contains(t, bot.LastMessage.Text, "Paste the link")
+	bot.Send(userId, "google.com")
+
+	require.Contains(t, bot.LastMessage.Text, "try again")
+
+	bot.Send(userId, "https://en.wikipedia.org/wiki/Go_(programming_language)")
+	log.Printf("%s", bot.LastMessage.Text)
+
+	bot.Send(userId, "Add")
+	cats, err := st.ListCategories(userId)
+	require.NoError(t, err)
+	require.Len(t, cats, 1)
+	require.Equal(t, "somecategory", cats[0].Category)
+	require.Equal(t, 1, cats[0].Count)
 }
 
 func setupMockBot(t *testing.T) (*botty.MockBot[*State], *storage.Storage) {

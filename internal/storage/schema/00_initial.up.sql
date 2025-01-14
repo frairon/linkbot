@@ -2,8 +2,8 @@
 
 -- stores users
 create table users(
-  id INTEGER not null primary key,
-  Name text not null
+  id INT not null primary key,
+  name text not null
 );
 
 create table user_session(
